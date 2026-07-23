@@ -54,7 +54,7 @@ commands (installing Hermes, WebUI, and initial config).
 | UI layer | MCP Apps extension (`io.modelcontextprotocol/ui`), single HTML resource, no framework to start | Keep the iframe payload simple and auditable |
 | Builder agent | Hermes Agent (NousResearch) via Hermes WebUI; Claude Code as backup | Owner wants Hermes to do the building, browser interface only |
 | Agent interface | Hermes WebUI (github.com/nesquena/hermes-webui) — NO terminal/TUI for daily use | Browser chat with full CLI parity; owner does not want a TUI |
-| Model brain | Google Gemini API free tier (Gemini Flash) | See §4 — $0, no card, ~1.5K req/day; no fallback for now |
+| Model brain | claude-code backend (revised 2026-07-22; Gemini free tier paused) | See §4 — Gemini free tier too small for agent loops (5 req/min, ~250/day) |
 | Repo | One personal GitHub repo, monorepo layout (see §5) | Everything hand-off-able in one place |
 
 ## 3. What the app does — DECIDED: "Recall", a spaced-repetition flashcard app
@@ -95,23 +95,29 @@ schedules the next review. Two clients, one shared deck database.
 - Editing/deleting cards via UI, images/media on cards, multiple users,
   deck sharing, fancy animations. Add later if wanted.
 
-## 4. Model brain — DECIDED: Google Gemini API free tier
+## 4. Model brain — DECIDED (revised 2026-07-22): claude-code backend, Gemini paused
 
-- Provider: Google Gemini API (AI Studio key, no credit card required).
-- Model: Gemini Flash (current generation; ~1,500 req/day free tier — verify
-  current limits at ai.google.dev when configuring).
-- Hermes setup: configure the `gemini` provider (direct API) or point Hermes's
-  OpenAI-compatible endpoint at Google's compatibility URL; set model via
-  `hermes model`. Hermes requires >= 64K context — Gemini Flash clears this.
-- Fallbacks: deliberately NONE for now. If throttling becomes annoying, add
-  OpenRouter free tier (`qwen/qwen3-coder:free`) and/or Groq to Hermes
-  `fallback_providers` later — config change only.
+- Primary: Hermes's `claude-code` backend — Hermes drives the locally installed
+  Claude Code CLI (official headless interface), billed against the owner's
+  Claude subscription. Chosen after Gemini free tier proved too small for agent
+  loops (see below). Note: this shares the subscription's usage budget with any
+  interactive Claude Code sessions.
+- Paused, not dropped: Google Gemini API free tier (`gemini` provider,
+  `gemini-flash-latest`). Reality check from Phase 1: the alias resolved to
+  gemini-3.6-flash at 5 requests/minute and ~250 requests/day free — the
+  original "~1,500 req/day" assumption was stale. That burns out mid-phase.
+  Per-key limits: https://aistudio.google.com/rate-limit
+- Fallback candidates if claude-code is unavailable: Groq free tier (key on
+  hand) or OpenRouter free tier (`qwen/qwen3-coder:free`) — config change only.
+- Hermes requires >= 64K context; all of the above clear this.
 
 Rules:
 - Keep model IDs in Hermes config only, never hardcoded in the app.
 - Agent loops burn REQUESTS (every tool call = a request); throttling means
   the per-day/minute cap, not a broken setup.
 - No OAuth-token proxy hacks against any provider's consumer subscription.
+  (The claude-code backend is NOT this — it uses the official Claude Code
+  CLI headless mode, not scraped tokens.)
   Paid upgrade shortlist if ever needed: GLM Coding Plan Lite (~$10/mo flat)
   or DeepSeek direct API (pay-per-token). Both drop in via config.
 
