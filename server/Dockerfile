@@ -1,6 +1,5 @@
-FROM python:3.13-slim
-
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# uv preinstalled in this base image (avoids a cross-image COPY --from).
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 WORKDIR /app
 
