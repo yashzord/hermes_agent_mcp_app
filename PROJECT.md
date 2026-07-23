@@ -54,7 +54,7 @@ commands (installing Hermes, WebUI, and initial config).
 | UI layer | MCP Apps extension (`io.modelcontextprotocol/ui`), single HTML resource, no framework to start | Keep the iframe payload simple and auditable |
 | Builder agent | Hermes Agent (NousResearch) via Hermes WebUI; Claude Code as backup | Owner wants Hermes to do the building, browser interface only |
 | Agent interface | Hermes WebUI (github.com/nesquena/hermes-webui) — NO terminal/TUI for daily use | Browser chat with full CLI parity; owner does not want a TUI |
-| Model brain | claude-code backend (revised 2026-07-22; Gemini free tier paused) | See §4 — Gemini free tier too small for agent loops (5 req/min, ~250/day) |
+| Model brain | Groq free tier, `openai/gpt-oss-120b` via custom endpoint (revised 2026-07-22 v2) | See §4 — Gemini quota too small for agent loops; Claude sub had no spare usage |
 | Repo | One personal GitHub repo, monorepo layout (see §5) | Everything hand-off-able in one place |
 
 ## 3. What the app does — DECIDED: "Recall", a spaced-repetition flashcard app
@@ -95,20 +95,20 @@ schedules the next review. Two clients, one shared deck database.
 - Editing/deleting cards via UI, images/media on cards, multiple users,
   deck sharing, fancy animations. Add later if wanted.
 
-## 4. Model brain — DECIDED (revised 2026-07-22): claude-code backend, Gemini paused
+## 4. Model brain — DECIDED (revised 2026-07-22 v2): Groq free tier
 
-- Primary: Hermes's `claude-code` backend — Hermes drives the locally installed
-  Claude Code CLI (official headless interface), billed against the owner's
-  Claude subscription. Chosen after Gemini free tier proved too small for agent
-  loops (see below). Note: this shares the subscription's usage budget with any
-  interactive Claude Code sessions.
-- Paused, not dropped: Google Gemini API free tier (`gemini` provider,
-  `gemini-flash-latest`). Reality check from Phase 1: the alias resolved to
-  gemini-3.6-flash at 5 requests/minute and ~250 requests/day free — the
-  original "~1,500 req/day" assumption was stale. That burns out mid-phase.
-  Per-key limits: https://aistudio.google.com/rate-limit
-- Fallback candidates if claude-code is unavailable: Groq free tier (key on
-  hand) or OpenRouter free tier (`qwen/qwen3-coder:free`) — config change only.
+- Primary: Groq free tier via Hermes's Custom endpoint
+  (https://api.groq.com/openai/v1, Chat Completions mode), model
+  `openai/gpt-oss-120b` (131K context, strong tool-calling, fast loops).
+- Tried and set aside the same evening:
+  - Gemini free tier (`gemini-flash-latest` → gemini-3.6-flash): 5 req/min,
+    ~250 req/day — burns out mid-phase. Key stays configured; per-key limits
+    at https://aistudio.google.com/rate-limit
+  - claude-code backend (Anthropic via Claude Code credentials): worked, but
+    the subscription had no spare usage — same budget as interactive Claude
+    Code sessions. Stays configured as an occasional option, not a builder.
+- Further fallback if Groq throttles: OpenRouter free tier
+  (`qwen/qwen3-coder:free`) — config change only.
 - Hermes requires >= 64K context; all of the above clear this.
 
 Rules:
