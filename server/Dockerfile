@@ -4,12 +4,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Build context is the repo root (Railway's default), so paths are prefixed
-# with server/. Build locally with: docker build -f server/Dockerfile .
-COPY server/pyproject.toml server/uv.lock ./
+# Build context is server/ (Railway Root Directory = server; locally:
+# docker build server/). Install deps first for layer caching.
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-cache
 
-COPY server/src ./src
+COPY src ./src
 
 # Serve over Streamable HTTP; keep the SQLite deck on a mounted volume so it
 # survives restarts/redeploys. Point your host's volume at /data.
