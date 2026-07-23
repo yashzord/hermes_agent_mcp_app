@@ -1,77 +1,36 @@
-"""SM-2 scheduling and tool round-trip checks (Phase 2 acceptance).
+"""Pure SM-2 scheduling checks (no storage). Run: uv run pytest (from server/)."""
 
-Run: uv run pytest  (from server/)
-"""
-
-import sys
-from datetime import datetime
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from state import CardRating, State  # noqa: E402
-
-
-def _force_due(card):
-    card.due_at = datetime.now()
-
-
-def test_add_card_starts_due():
-    s = State()
-    cid = s.add_card("q", "a")
-    assert s.get_next_due_card() is not None
-    assert s.cards[cid].ease == 2.5
-
-
-def test_again_resets_interval_to_one():
-    s = State()
-    cid = s.add_card("q", "a")
-    c = s.cards[cid]
-    s.grade_card(cid, CardRating.GOOD)
-    _force_due(c)
-    s.grade_card(cid, CardRating.GOOD)
-    assert c.interval > 1
-    _force_due(c)
-    s.grade_card(cid, CardRating.AGAIN)
-    assert c.interval == 1
+from sm2 import DEFAULT_EASE, MIN_EASE, CardRating, schedule
 
 
 def test_ease_floor_holds_under_repeated_again():
-    s = State()
-    cid = s.add_card("q", "a")
-    c = s.cards[cid]
+    ease, interval = DEFAULT_EASE, 1
     for _ in range(10):
-        _force_due(c)
-        s.grade_card(cid, CardRating.AGAIN)
-    assert c.ease >= 1.3
+        ease, interval = schedule(ease, interval, 1, CardRating.AGAIN)
+    assert ease == MIN_EASE
+    assert interval == 1
 
 
-def test_intervals_grow_on_good():
-    s = State()
-    cid = s.add_card("q", "a")
-    c = s.cards[cid]
+def test_again_resets_interval_to_one():
+    _, interval = schedule(DEFAULT_EASE, 20, 5, CardRating.AGAIN)
+    assert interval == 1
+
+
+def test_good_grows_interval():
+    ease, interval = DEFAULT_EASE, 1
     seen = []
-    for _ in range(4):
-        _force_due(c)
-        s.grade_card(cid, CardRating.GOOD)
-        seen.append(c.interval)
-    # non-decreasing and eventually beyond the initial day
+    for n in range(1, 5):
+        ease, interval = schedule(ease, interval, n, CardRating.GOOD)
+        seen.append(interval)
     assert seen == sorted(seen)
     assert seen[-1] > 1
 
 
-def test_grade_unknown_card_returns_false():
-    s = State()
-    assert s.grade_card("nope", CardRating.GOOD) is False
+def test_interval_never_below_one():
+    _, interval = schedule(DEFAULT_EASE, 1, 2, CardRating.HARD)
+    assert interval >= 1
 
 
-def test_stats_and_due_count():
-    s = State()
-    s.add_card("a", "1", "deckA")
-    s.add_card("b", "2", "deckA")
-    s.add_card("c", "3", "deckB")
-    st = s.get_stats("deckA")
-    assert st["total_cards"] == 2
-    assert st["due_today"] == 2
-    assert s.due_count("deckA") == 2
-    assert s.due_count() == 3
+def test_ease_capped_at_max():
+    ease, _ = schedule(DEFAULT_EASE, 1, 3, CardRating.EASY)
+    assert ease <= 2.5

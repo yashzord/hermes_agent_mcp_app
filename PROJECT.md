@@ -187,6 +187,16 @@ my-mcp-app/
   filtering, so "make flashcards from this article" works in the WebUI.
 - Persistence hardening, a second UI view (stats dashboard), card editing.
 
+## 6b. Role change (decided 2026-07-23)
+
+Original plan: Hermes builds, Claude Code backs up. After Phases 1-3, roles
+flipped: **Claude Code is the primary builder from Phase 4 on; Hermes Agent
+(via WebUI) becomes the final reviewer.** Reason: Hermes stalled repeatedly on
+provider/infra limits and hallucinated the ext-apps postMessage spec in Phase 3.
+Phases 0-3 still show Hermes doing the substance with Claude Code finishing; the
+CHANGELOG records the split per phase. Hermes stays in the loop as browser-based
+reviewer (no TUI), which was the owner's real goal.
+
 ## 7. Rules for the builder agent (Hermes or Claude Code)
 
 1. Read this file + CHANGELOG.md at session start; update CHANGELOG at session end.

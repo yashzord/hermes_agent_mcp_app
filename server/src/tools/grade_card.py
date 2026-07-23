@@ -14,11 +14,9 @@ def grade_card(card_id: str, rating: CardRating) -> str:
     Returns:
         Success or error message
     """
-    success = state.grade_card(card_id, rating)
+    due = state.grade_card(card_id, rating)
 
-    if not success:
+    if due is None:
         return f"Card with ID {card_id} not found."
 
-    card = state.cards[card_id]
-    next_due = card.due_at.strftime("%Y-%m-%d %H:%M")
-    return f"Card graded as '{rating.value}'. Next review scheduled for {next_due}."
+    return f"Card graded as '{CardRating(rating).value}'. Next review: {due:%Y-%m-%d %H:%M}."

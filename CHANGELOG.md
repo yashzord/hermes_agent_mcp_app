@@ -49,3 +49,26 @@ All notable changes to this project, kept by the builder agent per PROJECT.md §
   the UI reads. True browser round-trip proves out with Phase 4's Claude.ai
   connector.
 - Next: Phase 4 (deploy as remote server, SQLite, Claude.ai connector).
+
+## 2026-07-23 (Phase 4 - roles flipped)
+- Role change: Claude Code is now primary builder; Hermes becomes final reviewer
+  via WebUI (PROJECT.md §6b).
+- Phase 4 code COMPLETE and verified locally:
+  - Extracted SM-2 into a pure, testable module (src/sm2.py) with a __main__
+    self-check.
+  - Replaced in-memory state with SQLite (src/state.py): cards + reviews tables
+    (§4 data model), fresh connection per op, seeds a ~20-card starter deck
+    (src/seed.py) on an empty DB. Persists across restarts.
+  - Env-driven transport in server.py: stdio (dev/Inspector) or http (Streamable
+    HTTP) via RECALL_TRANSPORT; Dockerfile serves http with the DB on a /data
+    volume.
+  - Tests restructured: pure SM-2 tests + SQLite integration incl. seed and
+    persistence (12 tests). Ruff clean.
+  - Docs: docs/architecture.md (system map) and docs/deploy.md (deploy + Claude.ai
+    connector steps).
+  - Verified: Inspector lists all 5 tools over stdio and serves the seeded deck;
+    HTTP transport boots on Uvicorn and responds at /mcp/.
+- Remaining (needs owner's cloud account, guided): pick a host, deploy the
+  container with a /data volume, add the URL to Claude.ai, run a live study
+  session. That live round-trip is the Phase 4 (and true Phase 3) acceptance.
+- Then: Phase 5 stretch (wire deployed server into Hermes), and Hermes reviews.

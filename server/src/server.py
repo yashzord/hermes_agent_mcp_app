@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastmcp import FastMCP
@@ -36,7 +37,16 @@ mcp.tool()(stats)
 
 
 def main():
-    mcp.run(transport="stdio")
+    # stdio for local dev / MCP Inspector; http (Streamable HTTP) for deploy.
+    transport = os.environ.get("RECALL_TRANSPORT", "stdio")
+    if transport == "http":
+        mcp.run(
+            transport="http",
+            host="0.0.0.0",  # noqa: S104 - container needs to bind all interfaces
+            port=int(os.environ.get("PORT", "8000")),
+        )
+    else:
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
