@@ -1,0 +1,20 @@
+[project]
+name = "recall-server"
+version = "0.1.0"
+description = "Recall - spaced-repetition flashcard MCP app (server + MCP Apps UI)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp>=3.4.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.22",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
