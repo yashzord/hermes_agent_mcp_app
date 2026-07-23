@@ -1,0 +1,12 @@
+# Secrets stay out of git (PROJECT.md §7 rule 5)
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# SQLite data
+*.sqlite3
+*.db
