@@ -6,6 +6,8 @@
 __pycache__/
 *.pyc
 .venv/
+.ruff_cache/
+.pytest_cache/
 
 # SQLite data
 *.sqlite3
