@@ -18,6 +18,28 @@ Fly.io, Railway, and Render all satisfy these (§2). Fly.io is a good default fo
 a tiny always-on container with a volume; Railway is the simplest GitHub->deploy.
 All need a card for a persistent volume - verify current pricing before picking.
 
+## Railway (the chosen host)
+
+Railway's current UI/config has no "root directory" field, so we point it at the
+Dockerfile via config-as-code instead. `railway.json` at the repo root sets
+`build.dockerfilePath = server/Dockerfile`; the build context is the repo root,
+which is why the Dockerfile's COPY paths are prefixed with `server/`. Railway
+injects `PORT` and the app binds `0.0.0.0:$PORT` - both handled.
+
+Steps:
+1. Railway -> New Project -> Deploy from GitHub repo -> this repo.
+2. Nothing to configure: `railway.json` drives the Dockerfile build. Pushing to
+   `main` auto-deploys.
+3. Service -> Settings -> Networking -> Public Networking -> Generate Domain.
+   MCP endpoint is `https://<domain>/mcp/`.
+4. Leave Healthcheck Path empty (no `/` route) and Serverless/scale-to-zero OFF
+   (a connector must answer on demand).
+5. Optional: add a Volume mounted at `/data` for persistence. Without it the app
+   still runs; the seed deck just reloads on each restart.
+
+Validated locally with `docker build -f server/Dockerfile .` then running with
+an injected PORT - the container serves `/mcp/` (307).
+
 ## Shape of the deploy (any host)
 
 1. Point the host at this repo, build context `server/`.
