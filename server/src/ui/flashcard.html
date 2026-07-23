@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recall Flashcards</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --neutral-color: #6b7280;
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-color: #111827;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .flashcard-app {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 0.875rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .progress-bar {
+            margin-bottom: 24px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            color: var(--neutral-color);
+        }
+
+        .progress-track {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .flashcard {
+            background: var(--bg-color);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .flashcard:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard.flipped {
+            background: var(--card-bg);
+        }
+
+        .card-content {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            width: 100%;
+        }
+
+        .card-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 0;
+            right: 0;
+            font-size: 0.75rem;
+            color: var(--neutral-color);
+            opacity: 0.7;
+        }
+
+        .rating-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .rating-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .rating-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .rating-btn:active {
+            transform: translateY(0);
+        }
+
+        .rating-btn.again {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .rating-btn.hard {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .rating-btn.good {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .rating-btn.easy {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .rating-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .stats {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .stats.active {
+            display: block;
+        }
+
+        .stats h3 {
+            font-size: 1.125rem;
+            margin-bottom: 16px;
+            color: var(--text-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            background: var(--bg-color);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--neutral-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .message {
+            text-align: center;
+            padding: 48px 32px;
+            color: var(--neutral-color);
+        }
+
+        .message h2 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #mcp-bridge {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="mcp-bridge"></div>
+    <div class="flashcard-app">
+        <div class="header">
+            <h1>Recall Flashcards</h1>
+            <div class="subtitle">Spaced repetition study session</div>
+        </div>
+        
+        <div class="content">
+            <div class="progress-bar">
+                <div class="progress-info">
+                    <span class="progress-text">Card <span id="current-card">1</span> of <span id="total-cards">1</span></span>
+                    <span class="due-count"><span id="due-count">1</span> due</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="study-session">
+                <div class="flashcard" id="flashcard">
+                    <div class="card-content" id="card-front">
+                        Loading card...
+                    </div>
+                    <div class="card-hint">Click to flip</div>
+                </div>
+
+                <div class="rating-buttons">
+                    <button class="rating-btn again" onclick="rateCard('again')">
+                        Again
+                        <span class="rating-label">Repeat</span>
+                    </button>
+                    <button class="rating-btn hard" onclick="rateCard('hard')">
+                        Hard
+                        <span class="rating-label">Hard</span>
+                    </button>
+                    <button class="rating-btn good" onclick="rateCard('good')">
+                        Good
+                        <span class="rating-label">Good</span>
+                    </button>
+                    <button class="rating-btn easy" onclick="rateCard('easy')">
+                        Easy
+                        <span class="rating-label">Easy</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats" id="stats-panel">
+                <h3>Session Complete!</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-reviewed">0</div>
+                        <div class="stat-label">Reviewed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total Cards</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-streak">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-due">0</div>
+                        <div class="stat-label">Remaining Due</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="message hidden" id="no-cards-message">
+                <h2>No cards due!</h2>
+                <p>You've completed all due cards for now. Great work!</p>
+                <p>Check back later or add more cards to continue studying.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JSON-RPC 2.0 over postMessage bridge to the MCP Apps host.
+        // Spec (ext-apps 2026-01-26): the iframe calls tools with
+        //   {jsonrpc:"2.0", id, method:"tools/call", params:{name, arguments}}
+        // and the host pushes the opening tool's result via the notification
+        // "ui/notifications/tool-result".
+        const bridge = (() => {
+            let nextId = 1;
+            const pending = new Map();
+            const notificationHandlers = [];
+
+            window.addEventListener('message', (event) => {
+                const msg = event.data;
+                if (!msg || msg.jsonrpc !== '2.0') return;
+
+                // Response to a request we sent
+                if (msg.id != null && pending.has(msg.id)) {
+                    const { resolve, reject } = pending.get(msg.id);
+                    pending.delete(msg.id);
+                    if (msg.error) reject(new Error(msg.error.message || 'tool error'));
+                    else resolve(msg.result);
+                    return;
+                }
+
+                // Notification from host (no id)
+                if (msg.method) {
+                    notificationHandlers.forEach((fn) => fn(msg.method, msg.params || {}));
+                }
+            });
+
+            return {
+                callTool(name, args) {
+                    const id = nextId++;
+                    return new Promise((resolve, reject) => {
+                        pending.set(id, { resolve, reject });
+                        window.parent.postMessage({
+                            jsonrpc: '2.0',
+                            id,
+                            method: 'tools/call',
+                            params: { name, arguments: args || {} },
+                        }, '*');
+                    });
+                },
+                onNotification(fn) { notificationHandlers.push(fn); },
+            };
+        })();
+
+        // Tool results arrive as { content:[...], structuredContent:{...} };
+        // FastMCP puts a dict return under structuredContent.
+        function structured(result) {
+            return (result && result.structuredContent) || {};
+        }
+
+        // View controller: renders the current card and drives the review loop.
+        const app = {
+            card: null,       // { card_id, front, back, due_count }
+            flipped: false,
+
+            el(id) { return document.getElementById(id); },
+
+            showCard(data) {
+                this.card = data;
+                this.flipped = false;
+                this.el('card-front').textContent = data.front;
+                this.el('flashcard').classList.remove('flipped');
+                this.el('due-count').textContent = data.due_count ?? '';
+                this.el('total-cards').textContent = data.due_count ?? '';
+                this.el('current-card').textContent = '1';
+                this.el('progress-fill').style.width =
+                    (data.due_count ? (1 / data.due_count) * 100 : 100) + '%';
+                this.el('study-session').classList.remove('hidden');
+                this.el('stats-panel').classList.remove('active');
+                this.el('no-cards-message').classList.add('hidden');
+                this.setButtons(true);
+            },
+
+            flip() {
+                if (!this.card) return;
+                this.flipped = !this.flipped;
+                this.el('flashcard').classList.toggle('flipped', this.flipped);
+                this.el('card-front').textContent =
+                    this.flipped ? this.card.back : this.card.front;
+            },
+
+            setButtons(enabled) {
+                document.querySelectorAll('.rating-btn').forEach((b) => {
+                    b.disabled = !enabled;
+                    b.style.opacity = enabled ? '1' : '0.6';
+                });
+            },
+
+            // Render either a due card or the session-complete state.
+            render(data) {
+                if (data && data.due) this.showCard(data);
+                else this.finish();
+            },
+
+            async grade(rating) {
+                if (!this.card) return;
+                this.setButtons(false);
+                try {
+                    await bridge.callTool('grade_card', {
+                        card_id: this.card.card_id,
+                        rating,
+                    });
+                    const next = structured(await bridge.callTool('review_next', {}));
+                    this.render(next);
+                } catch (err) {
+                    console.error('grade failed:', err);
+                    this.setButtons(true);
+                }
+            },
+
+            async finish() {
+                this.card = null;
+                this.el('study-session').classList.add('hidden');
+                this.el('no-cards-message').classList.remove('hidden');
+                try {
+                    const s = structured(await bridge.callTool('stats', {}));
+                    this.el('stat-reviewed').textContent = s.reviewed_today ?? 0;
+                    this.el('stat-total').textContent = s.total_cards ?? 0;
+                    this.el('stat-streak').textContent = s.streak ?? 0;
+                    this.el('stat-due').textContent = s.due_today ?? 0;
+                    this.el('stats-panel').classList.add('active');
+                } catch (err) {
+                    console.error('stats failed:', err);
+                }
+            },
+        };
+
+        // Rating buttons use inline onclick="rateCard(...)".
+        window.rateCard = (rating) => app.grade(rating);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            app.el('flashcard').addEventListener('click', () => app.flip());
+
+            // The host renders this UI because review_next was called; it delivers
+            // that first card as a tool-result notification.
+            bridge.onNotification((method, params) => {
+                if (method === 'ui/notifications/tool-result') {
+                    app.render(structured(params));
+                }
+            });
+
+            // Fallback for hosts that don't push the opening result: fetch it.
+            // review_next is read-only, so this is safe even if the notification
+            // already rendered a card.
+            bridge.callTool('review_next', {})
+                .then((r) => { if (!app.card) app.render(structured(r)); })
+                .catch(() => { /* host will send the notification instead */ });
+        });
+    </script>
+</body>
+</html>

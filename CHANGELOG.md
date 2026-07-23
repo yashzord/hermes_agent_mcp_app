@@ -30,3 +30,22 @@ All notable changes to this project, kept by the builder agent per PROJECT.md §
 - Known simplification: ease is capped at 2.5, so `easy` does not accelerate a
   card beyond the default rate (conservative vs textbook SM-2; fine for v1).
 - Next: Phase 3 (MCP Apps UI) - builder Hermes.
+
+## 2026-07-23 (later)
+- Phase 3 COMPLETE. MCP Apps UI: ui://recall/flashcard HTML resource
+  (text/html;profile=mcp-app) registered, linked to review_next via
+  AppConfig(resource_uri=...) so hosts render the flip-card widget.
+- Split build: Hermes (Bedrock deepseek.v3.2) wrote the server-side wiring and
+  the HTML/CSS. It correctly inspected FastMCP's real Apps API but (a) misused
+  resource_uri on the resource - server wouldn't even import - and (b)
+  hallucinated the browser postMessage protocol ("mcp/callTool"). Claude Code
+  (backup) landed Hermes's own resource fix and rewrote the iframe bridge to the
+  actual ext-apps 2026-01-26 protocol: JSON-RPC 2.0 over postMessage, tools/call
+  for grade_card/review_next, ui/notifications/tool-result for the opening card.
+  Also dropped alert() (blocked in sandboxed iframes) and fixed the flip logic.
+- Acceptance (as far as stdio allows): server imports; resource lists + serves;
+  review_next carries ui.resourceUri; full add->review->grade->reschedule
+  round-trip verified in-process, and structuredContent field names match what
+  the UI reads. True browser round-trip proves out with Phase 4's Claude.ai
+  connector.
+- Next: Phase 4 (deploy as remote server, SQLite, Claude.ai connector).
