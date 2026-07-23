@@ -37,3 +37,27 @@ Gotchas:
 
 Config lives in ~/.hermes/ (config.yaml, .env) - never committed.
 config.yaml.example to be added when the deployed MCP server exists (Phase 5).
+
+## Provider saga (2026-07-22, during Phases 1-2)
+
+Chronology: Gemini free tier (5 req/min, ~250/day on gemini-3.6-flash - died
+mid-phase) → claude-code backend (worked, but subscription had no spare usage)
+→ Groq free tier via custom endpoint (per-request cap smaller than Hermes's own
+system prompt: HTTP 413 even in a fresh session) → AWS Bedrock, deepseek.v3.2,
+billed to bonus credits. That one stuck.
+
+Bedrock setup that finally worked:
+- Bedrock console: enable model access, create long-term API key.
+- `hermes model` → AWS Bedrock → API key → deepseek.v3.2, region us-east-1.
+- Endpoint is OpenAI-compatible: https://bedrock-mantle.us-east-1.api.aws/v1
+
+GOTCHA that cost an hour: Hermes's custom-endpoint provider takes base_url
+from the `model:` block but the api_key from the matching `custom_providers:`
+entry in config.yaml. The Bedrock wizard set the env vars but left the OLD
+Groq entry (with its inline api_key) in custom_providers - so every request
+sent the Groq key to AWS: HTTP 401 "Invalid bearer token". Fix: replace the
+stale custom_providers entry so base_url AND api_key both point at Bedrock.
+Diagnose with a direct curl (Bearer token against <base_url>/chat/completions)
+to prove the key before blaming anything else. Restart the WebUI
+(./ctl.sh restart) after ANY credential/provider change - it reads config at
+startup.
