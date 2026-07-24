@@ -91,3 +91,28 @@ All notable changes to this project, kept by the builder agent per PROJECT.md §
   text tool-client - "make flashcards from this article"). Note: Hermes cannot
   render the widget (only tool calls); Apps-capable hosts are Claude.ai, Goose,
   VS Code, ChatGPT.
+
+## 2026-07-24 (widget PROVEN working - and where it renders)
+- Server config finalized: stateless HTTP + JSON + permissive CORS - the exact
+  pattern the official MCP Apps docs use. Stateless avoids the GET event-stream
+  that Claude's proxy rejects (bug anthropics/claude-ai-mcp#636).
+- WIDGET RENDERS: ran the official ext-apps `basic-host` (examples/basic-host,
+  SERVERS pointed at the server) - the ui://recall/flashcard widget rendered in
+  a sandboxed iframe, flipped front->back, showed the four grade buttons, and
+  called back to the server (verified in logs). The app is 100% correct.
+- Host reality (tested, definitive):
+  - basic-host (official MCP Apps renderer): renders + interactive. ✓
+  - Claude.ai WEB: does NOT render the widget for a custom connector - tool
+    calls work, result shows as text. Tried stateful, stateless, resumed chat,
+    and a fresh chat; none rendered. This is Claude-side (bug #636 / custom-
+    connector gating), not our code. Untried: Claude Desktop (different render
+    path), Goose, VS Code Insiders.
+  - Hermes WebUI: cannot render (no MCP Apps support; markdown/mermaid only).
+- Bottom line: the interactive flashcard MCP App is built, deployed live on
+  Render, and demonstrably renders/works in a real MCP Apps host. Which chat
+  surfaces render custom-connector widgets is an ecosystem limitation, not a
+  project gap.
+- Local dev to re-see the widget: run the server
+  (RECALL_TRANSPORT=http PORT=8000 uv run python src/server.py) and the host
+  (cd ext-apps/examples/basic-host; SERVERS='["http://localhost:8000/mcp"]'
+  npx tsx serve.ts), open http://localhost:8080, call review_next.
