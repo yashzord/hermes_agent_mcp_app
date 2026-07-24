@@ -72,3 +72,22 @@ All notable changes to this project, kept by the builder agent per PROJECT.md §
   container with a /data volume, add the URL to Claude.ai, run a live study
   session. That live round-trip is the Phase 4 (and true Phase 3) acceptance.
 - Then: Phase 5 stretch (wire deployed server into Hermes), and Hermes reviews.
+
+## 2026-07-24 (DEPLOYED - Phase 4 acceptance MET)
+- Live on Render: https://recall-mcp-wa3n.onrender.com/mcp (free plan, Docker
+  from render.yaml blueprint, build context server/). Railway was abandoned -
+  its Metal builder failed every build (platform issue, not our code); Render
+  built and ran the same Dockerfile first try.
+- Deploy debugging (via Render MCP logs/metrics): app healthy throughout (no
+  crash, ~17% mem). Apparent flakiness was (a) deploy rollover running two
+  instances briefly, and (b) a wrong stateless_http+json_response experiment
+  that returned 405 on the client's GET event-stream. Reverted to standard
+  stateful Streamable HTTP - the mode Claude.ai connects to.
+- ACCEPTANCE MET: added to Claude.ai as a custom connector; "quiz me from the
+  mcp-basics deck" called review_next and rendered the interactive flip-card
+  widget inline in chat. Full MCP Apps round-trip working in a real host.
+- Remaining: exercise the grade buttons in the widget (fires grade_card via the
+  host), then optional Phase 5 (wire the deployed server into Hermes as a
+  text tool-client - "make flashcards from this article"). Note: Hermes cannot
+  render the widget (only tool calls); Apps-capable hosts are Claude.ai, Goose,
+  VS Code, ChatGPT.
