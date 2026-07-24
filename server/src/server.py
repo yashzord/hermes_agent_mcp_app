@@ -40,10 +40,28 @@ def main():
     # stdio for local dev / MCP Inspector; http (Streamable HTTP) for deploy.
     transport = os.environ.get("RECALL_TRANSPORT", "stdio")
     if transport == "http":
-        # Standard (stateful) Streamable HTTP - the reference mode MCP Apps
-        # hosts like Claude.ai connect to.
-        mcp.run(
-            transport="http",
+        # Stateless + JSON is the pattern the official MCP Apps server example
+        # uses. A CORS middleware (allow-all) lets browser-based hosts - the
+        # ext-apps basic-host, MCPJam, etc. - connect cross-origin.
+        import uvicorn
+        from starlette.middleware import Middleware
+        from starlette.middleware.cors import CORSMiddleware
+
+        cors = Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["*"],
+        )
+        app = mcp.http_app(
+            stateless_http=True,
+            json_response=True,
+            host_origin_protection=False,
+            middleware=[cors],
+        )
+        uvicorn.run(
+            app,
             host="0.0.0.0",  # noqa: S104 - container needs to bind all interfaces
             port=int(os.environ.get("PORT", "8000")),
         )
