@@ -387,7 +387,13 @@
         // Tool results arrive as { content:[...], structuredContent:{...} };
         // FastMCP puts a dict return under structuredContent.
         function structured(result) {
-            return (result && result.structuredContent) || {};
+            if (!result || typeof result !== 'object') return {};
+            // FastMCP dict returns land in structuredContent; some hosts nest
+            // the tool result under .result, and some (e.g. MCPJam's
+            // ui/notifications/tool-result) pass the payload bare.
+            return result.structuredContent
+                || (result.result && result.result.structuredContent)
+                || result;
         }
 
         // View controller: renders the current card and drives the review loop.
@@ -428,10 +434,12 @@
                 });
             },
 
-            // Render either a due card or the session-complete state.
+            // Render a due card, or finish only when the server explicitly
+            // says nothing is due. An empty/unrecognized payload is left alone
+            // so a second delivery path (notification vs fetch) can render it.
             render(data) {
                 if (data && data.due) this.showCard(data);
-                else this.finish();
+                else if (data && data.due === false) this.finish();
             },
 
             async grade(rating) {
