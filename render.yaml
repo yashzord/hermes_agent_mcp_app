@@ -1,0 +1,18 @@
+# Render Blueprint for Recall (Phase 4 deploy).
+# Render dashboard -> New -> Blueprint -> connect this repo -> Apply.
+services:
+  - name: recall-mcp
+    type: web
+    runtime: docker
+    plan: free
+    region: oregon
+    # Build the server/ subdirectory's Dockerfile (build context = server/).
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    # RECALL_TRANSPORT/PORT come from the Dockerfile ENV; Render injects its own
+    # PORT, which the server binds on 0.0.0.0. Override the DB path off the
+    # (volume) default onto the always-writable workdir - no disk on free plan,
+    # so the seed deck just reloads on restart.
+    envVars:
+      - key: RECALL_DB
+        value: /app/recall.db
