@@ -40,10 +40,14 @@ def main():
     # stdio for local dev / MCP Inspector; http (Streamable HTTP) for deploy.
     transport = os.environ.get("RECALL_TRANSPORT", "stdio")
     if transport == "http":
+        # stateless_http + json_response: no long-lived session or SSE stream,
+        # so a buffering proxy (Render/Cloudflare) can't drop the session.
         mcp.run(
             transport="http",
             host="0.0.0.0",  # noqa: S104 - container needs to bind all interfaces
             port=int(os.environ.get("PORT", "8000")),
+            stateless_http=True,
+            json_response=True,
         )
     else:
         mcp.run(transport="stdio")
