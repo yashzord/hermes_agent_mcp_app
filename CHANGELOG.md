@@ -116,3 +116,22 @@ All notable changes to this project, kept by the builder agent per PROJECT.md §
   (RECALL_TRANSPORT=http PORT=8000 uv run python src/server.py) and the host
   (cd ext-apps/examples/basic-host; SERVERS='["http://localhost:8000/mcp"]'
   npx tsx serve.ts), open http://localhost:8080, call review_next.
+
+## 2026-07-24 (MCPJam renders the LIVE widget + widget bug fixed)
+- Showcased in MCPJam (a real MCP client + Apps host) pointed at the live Render
+  server: review_next rendered the flip-card, front->back flip worked, and the
+  four grade buttons fired grade_card + advanced to the next card. Second
+  Apps-capable host (after basic-host) to render the deployed widget.
+- Fixed a widget bug surfaced by MCPJam (ui/flashcard.html): it showed "Session
+  Complete" with 20 cards due. Cause: structured() only read
+  result.structuredContent, so MCPJam's ui/notifications/tool-result payload
+  extracted to {} and render() fell through to finish(). Fix: structured() now
+  handles structuredContent / result.structuredContent / bare payloads, and
+  render() only finishes when the server explicitly returns due===false, so an
+  unrecognized payload from one delivery path can't clobber a good card from the
+  other. Committed 488be23, auto-deployed to Render.
+- Docs synced: deploy.md rewritten Railway->Render (with live URL + honest
+  free-tier caveats: cold starts, no persistent disk / deck reseeds on restart),
+  architecture.md corrected (an MCP Apps host renders the widget, not Claude.ai
+  web), server/README.md written, docs/WALKTHROUGH.md added (full annotated code
+  tour). Learning notes also live in the Obsidian vault (Projects/Personal/Recall).

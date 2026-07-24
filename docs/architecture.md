@@ -2,11 +2,14 @@
 
 Plain-language map of how the pieces fit, for anyone picking this up.
 
+> Want the slow, annotated tour with real code and the *why* behind each layer?
+> See [WALKTHROUGH.md](./WALKTHROUGH.md). This file is the one-page map.
+
 ## The whole system in one picture
 
 ```
   Card FACTORY                         Card STUDY ROOM
-  (Hermes WebUI / any MCP client)      (Claude.ai chat)
+  (any MCP client)                     (an MCP Apps host: MCPJam, basic-host)
         │  "make flashcards"                 │  "quiz me"
         │  add_card                          │  review_next
         ▼                                     ▼
@@ -18,8 +21,10 @@ Plain-language map of how the pieces fit, for anyone picking this up.
    └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-Two clients, one shared deck. The chat host renders the flip-card widget inline
-and the widget talks back to the server through the host.
+Two clients, one shared deck. An MCP Apps host renders the flip-card widget inline
+and the widget talks back to the server through the host. Deployed live on Render:
+`https://recall-mcp-wa3n.onrender.com/mcp` (see `deploy.md`). Not every client
+renders the widget - which do and which don't is covered in `deploy.md`.
 
 ## Layers
 

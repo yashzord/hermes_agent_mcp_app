@@ -1,64 +1,67 @@
-# Deploying Recall (Phase 4)
+# Deploying Recall
 
-The code is deploy-ready: `RECALL_TRANSPORT=http` serves Streamable HTTP, the
-Dockerfile persists the SQLite deck on a `/data` volume. What remains needs your
-cloud account, so this stays a guided step. Exact host CLI commands are best
-confirmed live at deploy time (versions drift) rather than pasted from here.
+The code is deploy-ready: `RECALL_TRANSPORT=http` serves Streamable HTTP and the
+`server/Dockerfile` runs it. This project is **deployed live on Render**; the
+sections below record how, and how any host would work.
 
-## What the host must provide
+## Live deployment (current)
 
-1. Build from the `server/Dockerfile`.
-2. A **public HTTPS URL** - Claude.ai connectors require https.
-3. **Always-on** (do not spin down on idle) - a connector must answer on demand.
-4. A **persistent volume mounted at `/data`** - SQLite needs a real disk, or the
-   deck resets on every redeploy.
-5. Route external traffic to container `PORT` (default 8000).
+- **Host:** Render (free plan), Docker from the `render.yaml` blueprint.
+- **URL:** `https://recall-mcp-wa3n.onrender.com/mcp`
+- **Build:** `dockerfilePath: ./server/Dockerfile`, `dockerContext: ./server`.
+- **Config:** `render.yaml` sets `RECALL_DB=/app/recall.db`. Render's free plan has
+  **no persistent disk**, so the SQLite deck lives on the container's ephemeral
+  filesystem and the ~20-card seed deck simply reloads on each restart. That's
+  fine for study content; add a paid disk mounted at `/data` (and drop the
+  `RECALL_DB` override) if the deck ever needs to persist.
+- **Transport mode:** stateless HTTP + JSON response + permissive CORS
+  (`server/src/server.py`). Stateless is the official MCP Apps server pattern and
+  sidesteps the Claude proxy GET-stream bug (anthropics/claude-ai-mcp#636).
 
-Fly.io, Railway, and Render all satisfy these (§2). Fly.io is a good default for
-a tiny always-on container with a volume; Railway is the simplest GitHub->deploy.
-All need a card for a persistent volume - verify current pricing before picking.
+### Free-plan caveats (honest)
+- **Cold starts:** a free Render service spins down after ~15 min idle and takes a
+  few seconds to wake. A client's first call after idle may lag. Upgrade to a paid
+  instance for always-on.
+- **No disk:** see above - the deck reseeds on restart.
 
-## Railway (the chosen host)
+### Redeploys
+`autoDeploy` is on: pushing to `main` triggers a new Render build automatically.
+No manual step.
 
-The server lives in `server/`, so Railway must build from there. Set the service's
-**Root Directory** to `server` (Settings -> Source -> Root Directory). That scopes
-the build context to `server/`, and Railway auto-detects `server/Dockerfile`.
-Railway injects `PORT` and the app binds `0.0.0.0:$PORT` - both handled.
+## Why Render (and not Railway/Fly)
 
-Steps:
-1. Railway -> New Project -> Deploy from GitHub repo -> this repo.
-2. Service -> Settings -> Source -> **Root Directory** = `server`. Save (redeploys).
-3. Service -> Settings -> Networking -> Public Networking -> Generate Domain.
-   MCP endpoint is `https://<domain>/mcp/`.
-4. Leave Healthcheck Path empty (no `/` route) and Serverless/scale-to-zero OFF
-   (a connector must answer on demand).
-5. Optional: add a Volume mounted at `/data` for persistence. Without it the app
-   still runs; the seed deck just reloads on each restart.
+Railway was tried first and abandoned - its Metal builder failed every build (a
+platform issue, not our code). Render built and ran the same `server/Dockerfile`
+first try. Fly.io also satisfies the requirements and is a fine alternative for a
+tiny always-on container with a volume.
 
-Validated locally with `docker build server/` then running with an injected PORT -
-the container serves `/mcp/` (307).
+## What any host must provide
 
-## Shape of the deploy (any host)
+1. Build from `server/Dockerfile` (build context `server/`).
+2. A **public HTTPS URL** - remote MCP clients require https.
+3. Route external traffic to container `PORT` (the app binds `0.0.0.0:$PORT`).
+4. Optional: a **persistent volume at `/data`** + drop the `RECALL_DB` override, if
+   the deck must survive restarts. Without it the seed deck reloads each start.
+5. For a connector that must answer instantly, keep the instance **always-on**
+   (paid tier) rather than scale-to-zero.
 
-1. Point the host at this repo, build context `server/`.
-2. Create a volume and mount it at `/data`.
-3. Deploy. The container starts `uv run python src/server.py` in http mode.
-4. Note the public URL; the MCP endpoint is `https://<your-app>/mcp/`.
-5. Smoke test with the Inspector against the remote URL before wiring Claude.ai.
+## Connecting a client
 
-## Add to Claude.ai
+The MCP endpoint is `https://recall-mcp-wa3n.onrender.com/mcp`. Where the
+interactive widget actually renders depends on the client - see
+`docs/architecture.md` and the vault's "Hosts & Where It Renders" note. In short:
 
-1. Claude.ai -> Settings -> Connectors -> Add custom connector.
-2. Name it Recall, URL `https://<your-app>/mcp/`.
-3. Auth: start with none (unguessable URL). Upgrade to OAuth if it ever holds
-   real data (PROJECT.md §4/§6).
-4. In a chat: "quiz me from the mcp-basics deck" -> `review_next` runs, the
-   flashcard widget renders inline. Flip a card, grade it - `grade_card` fires
-   through the host and the next card loads. That round-trip is the Phase 4
-   (and true Phase 3) acceptance.
+- **MCPJam** (`npx -y @mcpjam/inspector@latest`) and the official ext-apps
+  **basic-host**: render + drive the flashcard widget. Proven.
+- **Claude.ai web (custom connector):** tool calls work, but the widget does
+  **not** render inline - a Claude-side custom-connector limitation (#636), not a
+  bug in Recall. The result shows as text.
+
+To add to Claude.ai anyway (tools-as-text): Settings -> Connectors -> Add custom
+connector -> URL `https://recall-mcp-wa3n.onrender.com/mcp`, no auth.
 
 ## Security notes
 
 - No secrets are baked into the image. `RECALL_DB` is just a path.
-- Start with no-auth + an unguessable URL; the deck is study content, not
-  sensitive data. Add OAuth before storing anything real.
+- No-auth + an unguessable URL is acceptable because the deck is study content,
+  not sensitive data. Add OAuth before storing anything real (PROJECT.md §4/§6).
